@@ -1168,6 +1168,109 @@
     /* Light theme: switch highlight.js stylesheet */
     [data-theme="light"] .hljs-stylesheet-dark { display: none; }
     [data-theme="dark"]  .hljs-stylesheet-light { display: none; }
+
+    /* ===== PRINT / PDF ===== */
+    @media print {
+      /* Hide all chrome */
+      .topbar,
+      .sidebar,
+      .toc-panel,
+      .statusbar,
+      .content-header,
+      .modal-overlay {
+        display: none !important;
+      }
+
+      /* Unclip every container so full content flows */
+      html, body {
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+        color: #000 !important;
+      }
+
+      .main {
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+      }
+
+      .content {
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+      }
+
+      .md-scroll {
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+      }
+
+      .md-body {
+        max-width: 100% !important;
+        padding: 20px !important;
+        margin: 0 !important;
+        display: block !important;
+        animation: none !important;
+      }
+
+      /* Better page-break behaviour */
+      .md-body h1, .md-body h2, .md-body h3 {
+        page-break-after: avoid;
+      }
+
+      .md-body pre, .md-body table, .md-body blockquote {
+        page-break-inside: avoid;
+      }
+
+      /* Ensure code blocks and tables are readable */
+      .md-body pre {
+        white-space: pre-wrap !important;
+        overflow: visible !important;
+        border: 1px solid #ccc !important;
+        background: #f6f8fa !important;
+      }
+
+      .md-body pre code {
+        color: #1f2328 !important;
+      }
+
+      .md-body table {
+        border-collapse: collapse !important;
+      }
+
+      .md-body th, .md-body td {
+        border: 1px solid #ccc !important;
+        color: #1f2328 !important;
+      }
+
+      .md-body a {
+        color: #0550ae !important;
+      }
+
+      /* Show link URLs in print */
+      .md-body a[href]::after {
+        content: ' (' attr(href) ')';
+        font-size: 0.8em;
+        color: #666;
+      }
+
+      /* Hide heading anchor links */
+      .heading-anchor {
+        display: none !important;
+      }
+
+      /* Hide copy buttons */
+      .copy-btn {
+        display: none !important;
+      }
+
+      mark {
+        background: #fef3c7 !important;
+        color: #000 !important;
+      }
+    }
   </style>
 </head>
 
@@ -1186,6 +1289,7 @@
       <button class="btn" onclick="openFolder()" id="btnOpenFolder">📁 Open Folder</button>
       <button class="btn" onclick="showUrlModal()" id="btnLoadUrl">🌐 Load URL</button>
       <button class="btn" onclick="toggleToc()" title="Toggle Table of Contents (Ctrl+T)" id="btnToc">📑 TOC</button>
+      <button class="btn" onclick="printDoc()" id="btnPrint" title="Print / Save as PDF">🖨️ Print PDF</button>
       <button class="theme-toggle" onclick="toggleTheme()" id="btnTheme" title="Toggle dark / light theme">🌙</button>
       <input type="file" id="fileInput" multiple onchange="handleFiles(this.files)" style="display:none">
       <input type="file" id="folderInput" webkitdirectory onchange="handleFiles(this.files)" style="display:none">
@@ -1859,8 +1963,20 @@
       if (e.ctrlKey || e.metaKey) {
         if (e.key === 'b') { e.preventDefault(); toggleSidebar(); }
         if (e.key === 't') { e.preventDefault(); toggleToc(); }
+        if (e.key === 'p') { e.preventDefault(); printDoc(); }
       }
     });
+
+    // =====================================================================
+    // PRINT / PDF
+    // =====================================================================
+    function printDoc() {
+      if (!activeFile) return;
+      // Ensure the full mdBody is visible before printing
+      const mdBody = document.getElementById('mdBody');
+      if (!mdBody || mdBody.style.display === 'none') return;
+      window.print();
+    }
 
     // =====================================================================
     // UTILS
