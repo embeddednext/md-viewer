@@ -11,7 +11,8 @@
   <!-- marked.js for Markdown parsing -->
   <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
   <!-- highlight.js for code syntax highlighting -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
+  <link id="hljsDark"  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
+  <link id="hljsLight" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css" disabled>
   <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,6 +43,29 @@
       --hover: rgba(88, 166, 255, 0.07);
       --selected: rgba(88, 166, 255, 0.18);
       --toc-w: 280px;
+      --theme-transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+    }
+
+    /* ===== LIGHT THEME ===== */
+    [data-theme="light"] {
+      --bg: #ffffff;
+      --bg2: #f6f8fa;
+      --bg3: #eaeef2;
+      --bg4: #d0d7de;
+      --border: #d0d7de;
+      --border2: #b1b9c0;
+      --text: #1f2328;
+      --text2: #656d76;
+      --text3: #9198a1;
+      --accent: #0969da;
+      --accent2: #0550ae;
+      --accent3: #0969da;
+      --green: #1a7f37;
+      --orange: #9a6700;
+      --red: #d1242f;
+      --purple: #7c3aed;
+      --hover: rgba(9, 105, 218, 0.07);
+      --selected: rgba(9, 105, 218, 0.12);
     }
 
     /* ===== RESET & BASE ===== */
@@ -63,6 +87,13 @@
       flex-direction: column;
       font-size: 14px;
       line-height: 1.6;
+      transition: var(--theme-transition);
+    }
+
+    /* Apply smooth transitions to all major surfaces during theme switch */
+    body.theme-transitioning *,
+    body.theme-transitioning {
+      transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease !important;
     }
 
     /* ===== SCROLLBAR ===== */
@@ -1104,6 +1135,39 @@
         display: none;
       }
     }
+
+    /* ===== THEME TOGGLE BUTTON ===== */
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 16px;
+      transition: border-color 0.15s, background 0.15s, transform 0.2s ease;
+      flex-shrink: 0;
+      user-select: none;
+      line-height: 1;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--accent);
+      background: var(--hover);
+      transform: rotate(20deg) scale(1.08);
+    }
+
+    .theme-toggle:active {
+      transform: rotate(0deg) scale(0.95);
+    }
+
+    /* Light theme: switch highlight.js stylesheet */
+    [data-theme="light"] .hljs-stylesheet-dark { display: none; }
+    [data-theme="dark"]  .hljs-stylesheet-light { display: none; }
   </style>
 </head>
 
@@ -1122,6 +1186,7 @@
       <button class="btn" onclick="openFolder()" id="btnOpenFolder">📁 Open Folder</button>
       <button class="btn" onclick="showUrlModal()" id="btnLoadUrl">🌐 Load URL</button>
       <button class="btn" onclick="toggleToc()" title="Toggle Table of Contents (Ctrl+T)" id="btnToc">📑 TOC</button>
+      <button class="theme-toggle" onclick="toggleTheme()" id="btnTheme" title="Toggle dark / light theme">🌙</button>
       <input type="file" id="fileInput" multiple onchange="handleFiles(this.files)" style="display:none">
       <input type="file" id="folderInput" webkitdirectory onchange="handleFiles(this.files)" style="display:none">
     </div>
@@ -1642,6 +1707,34 @@
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
     function toggleToc() { document.getElementById('tocPanel').classList.toggle('collapsed'); }
 
+    // =====================================================================
+    // THEME TOGGLE
+    // =====================================================================
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const btn = document.getElementById('btnTheme');
+      btn.textContent = theme === 'dark' ? '🌙' : '☀️';
+      btn.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+
+      // Swap highlight.js stylesheet for best contrast
+      const darkHljs  = document.getElementById('hljsDark');
+      const lightHljs = document.getElementById('hljsLight');
+      if (darkHljs)  darkHljs.disabled  = (theme !== 'dark');
+      if (lightHljs) lightHljs.disabled = (theme !== 'light');
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+
+      // Smooth transition burst
+      document.body.classList.add('theme-transitioning');
+      setTimeout(() => document.body.classList.remove('theme-transitioning'), 300);
+
+      applyTheme(next);
+      try { localStorage.setItem('md-viewer-theme', next); } catch(e) {}
+    }
+
     function clearAll() {
       loadedFiles = {};
       folderStructure = {};
@@ -1790,6 +1883,11 @@
       initResizer(document.getElementById('leftResizer'), document.getElementById('sidebar'), 'left');
       initResizer(document.getElementById('tocResizer'), document.getElementById('tocPanel'), 'right');
       document.getElementById('mdScroll').addEventListener('scroll', onMdScroll);
+
+      // Restore saved theme (default: dark)
+      let savedTheme = 'dark';
+      try { savedTheme = localStorage.getItem('md-viewer-theme') || 'dark'; } catch(e) {}
+      applyTheme(savedTheme);
     });
   </script>
 </body>
