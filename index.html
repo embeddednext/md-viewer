@@ -1270,7 +1270,71 @@
         background: #fef3c7 !important;
         color: #000 !important;
       }
+
+      /* ===== PRINT TOC PAGE ===== */
+      /* Show the print-TOC page */
+      .print-toc {
+        display: block !important;
+        page-break-after: always;
+        padding: 40px 48px;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        color: #1f2328;
+      }
+
+      .print-toc h1 {
+        font-size: 22pt;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #0d1117;
+        border-bottom: 2px solid #0550ae;
+        padding-bottom: 10px;
+      }
+
+      .print-toc .toc-doc-title {
+        font-size: 11pt;
+        color: #656d76;
+        margin-bottom: 32px;
+      }
+
+      .print-toc-entry {
+        display: flex;
+        align-items: baseline;
+        gap: 0;
+        margin: 0;
+        line-height: 1.85;
+      }
+
+      .print-toc-entry a {
+        color: #1f2328 !important;
+        text-decoration: none !important;
+        border: none !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 75%;
+      }
+
+      .print-toc-entry a::after {
+        content: none !important;  /* suppress the href appending from the link rule */
+      }
+
+      .print-toc-dots {
+        flex: 1;
+        border-bottom: 1px dotted #9198a1;
+        margin: 0 6px 4px 6px;
+        min-width: 20px;
+      }
+
+      .print-toc-entry[data-level="1"] { padding-left: 0;  font-weight: 700; font-size: 11pt; }
+      .print-toc-entry[data-level="2"] { padding-left: 16px; font-size: 10.5pt; }
+      .print-toc-entry[data-level="3"] { padding-left: 32px; font-size: 10pt; color: #444; }
+      .print-toc-entry[data-level="4"] { padding-left: 48px; font-size: 9.5pt; color: #555; }
+      .print-toc-entry[data-level="5"] { padding-left: 64px; font-size: 9pt;   color: #666; }
+      .print-toc-entry[data-level="6"] { padding-left: 80px; font-size: 9pt;   color: #666; }
     }
+
+    /* Hide print-toc completely on screen */
+    .print-toc { display: none; }
   </style>
 </head>
 
@@ -1319,6 +1383,9 @@
       </div>
     </div>
   </div>
+
+  <!-- ===== PRINT TOC (hidden on screen, rendered in print/PDF) ===== -->
+  <div class="print-toc" id="print-toc"></div>
 
   <!-- ===== MAIN ===== -->
   <div class="main">
@@ -1972,10 +2039,37 @@
     // =====================================================================
     function printDoc() {
       if (!activeFile) return;
-      // Ensure the full mdBody is visible before printing
       const mdBody = document.getElementById('mdBody');
       if (!mdBody || mdBody.style.display === 'none') return;
+
+      // ---- Build the TOC page ----
+      const tocDiv = document.getElementById('print-toc');
+      if (tocHeadings.length > 0) {
+        const file = loadedFiles[activeFile];
+        const docTitle = file ? file.name.replace(/\.[^.]+$/, '') : 'Table of Contents';
+
+        let html = `<h1>Table of Contents</h1>`;
+        html += `<div class="toc-doc-title">${esc(docTitle)}</div>`;
+
+        tocHeadings.forEach(h => {
+          const level = parseInt(h.el.tagName[1]);
+          const text = h.el.textContent.replace(/\s*#\s*$/, '').trim();
+          html += `
+            <div class="print-toc-entry" data-level="${level}">
+              <a href="#${h.id}">${esc(text)}</a>
+              <span class="print-toc-dots"></span>
+            </div>`;
+        });
+
+        tocDiv.innerHTML = html;
+      } else {
+        tocDiv.innerHTML = '';  // no headings → skip TOC page
+      }
+
       window.print();
+
+      // Clean up after print dialog closes
+      setTimeout(() => { tocDiv.innerHTML = ''; }, 500);
     }
 
     // =====================================================================
